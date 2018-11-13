@@ -1,0 +1,36 @@
+From 40c1f60bbd88fc50b006c61a538555f666e1c02c Mon Sep 17 00:00:00 2001
+From: Tobias Schramm <tobleminer@gmail.com>
+Date: Tue, 13 Nov 2018 17:07:37 +0100
+Subject: [PATCH 0/2] libubox: Enhance robustness of blobmsg_parse
+
+Hi,
+
+I've started using the blobmsg feature of libubox quite a lot and noticed
+that blobmsg_parse will segfault in quite a lot of cases where broken
+input is supplied. There are a lot of potential out of bounds accesses in
+libuboxes blobmsg attribute validation methods althogh we do in a lot of
+places know the length of the buffer the attribute resides in.
+
+This patchset adds additional validation to the blob and blobmsg attribute
+itterators and attribute validation methods.
+
+It is somewhat limited since the API defines methods that do not know the
+length of the buffer around the supplied attributes and I do not want to
+change the API in ways that will break existing software.
+
+Regards,
+
+Tobias Schramm
+
+Tobias Schramm (2):
+  Ensure blob_attr length check does not perform out of bounds reads
+  Replace use of blobmsg_check_attr by blobmsg_check_attr_safe
+
+ blob.h    |  4 ++--
+ blobmsg.c | 30 ++++++++++++++++++++++++------
+ blobmsg.h |  4 +++-
+ 3 files changed, 29 insertions(+), 9 deletions(-)
+
+-- 
+2.19.1
+

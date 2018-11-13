@@ -1,0 +1,53 @@
+From 3763623e7868e2d365c6ae154304ee95f12598b4 Mon Sep 17 00:00:00 2001
+From: Tobias Schramm <tobleminer@gmail.com>
+Date: Tue, 13 Nov 2018 04:08:00 +0100
+Subject: [PATCH 1/2] Ensure blob_attr length check does not perform out of
+ bounds reads
+
+Before there might have been as little as one single byte left which would result
+int 3 bytes of blob_attr->id_len being out of bounds
+
+Signed-off-by: Tobias Schramm <tobleminer@gmail.com>
+---
+ blob.h    | 4 ++--
+ blobmsg.h | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/blob.h b/blob.h
+index a092f5d..2304f8c 100644
+--- a/blob.h
++++ b/blob.h
+@@ -242,7 +242,7 @@ blob_put_u64(struct blob_buf *buf, int id, uint64_t val)
+ 
+ #define __blob_for_each_attr(pos, attr, rem) \
+ 	for (pos = (struct blob_attr *) attr; \
+-	     rem > 0 && (blob_pad_len(pos) <= rem) && \
++	     rem >= sizeof(struct blob_attr) && (blob_pad_len(pos) <= rem) && \
+ 	     (blob_pad_len(pos) >= sizeof(struct blob_attr)); \
+ 	     rem -= blob_pad_len(pos), pos = blob_next(pos))
+ 
+@@ -250,7 +250,7 @@ blob_put_u64(struct blob_buf *buf, int id, uint64_t val)
+ #define blob_for_each_attr(pos, attr, rem) \
+ 	for (rem = attr ? blob_len(attr) : 0, \
+ 	     pos = (struct blob_attr *) (attr ? blob_data(attr) : NULL); \
+-	     rem > 0 && (blob_pad_len(pos) <= rem) && \
++	     rem >= sizeof(struct blob_attr) && (blob_pad_len(pos) <= rem) && \
+ 	     (blob_pad_len(pos) >= sizeof(struct blob_attr)); \
+ 	     rem -= blob_pad_len(pos), pos = blob_next(pos))
+ 
+diff --git a/blobmsg.h b/blobmsg.h
+index b06ef59..b63dd52 100644
+--- a/blobmsg.h
++++ b/blobmsg.h
+@@ -266,7 +266,7 @@ int blobmsg_printf(struct blob_buf *buf, const char *name, const char *format, .
+ #define blobmsg_for_each_attr(pos, attr, rem) \
+ 	for (rem = attr ? blobmsg_data_len(attr) : 0, \
+ 	     pos = (struct blob_attr *) (attr ? blobmsg_data(attr) : NULL); \
+-	     rem > 0 && (blob_pad_len(pos) <= rem) && \
++	     rem = sizeof(struct blob_attr) && (blob_pad_len(pos) <= rem) && \
+ 	     (blob_pad_len(pos) >= sizeof(struct blob_attr)); \
+ 	     rem -= blob_pad_len(pos), pos = blob_next(pos))
+ 
+-- 
+2.19.1
+
