@@ -104,7 +104,29 @@ static inline int blobmsg_len(const struct blob_attr *attr)
 	return blobmsg_data_len(attr);
 }
 
-bool blobmsg_check_attr(const struct blob_attr *attr, bool name);
+/*
+ * blobmsg_check_attr_safe: safely validate a single untrusted attribute
+ *
+ * This method is a safe implementation of blobmsg_check_attr.
+ * It will limit all memory access performed on the blob to the
+ * range [attr, attr + len] (upper bound non inclusive) and is
+ * thus suited for checking untrusted blob attributes.
+ */
+bool blobmsg_check_attr_safe(const struct blob_attr *attr, bool name, size_t len);
+
+/*
+ * blobmsg_check_attr: validate a single attribute
+ *
+ * This method may be used with trusted data only. Providing
+ * malformed blobs will cause out of bounds memory access and
+ * crash your program or get your device 0wned.
+ */
+static inline bool
+blobmsg_check_attr(const struct blob_attr *attr, bool name)
+{
+	return blobmsg_check_attr_safe(attr, name, blob_raw_len(attr));
+}
+
 bool blobmsg_check_attr_list(const struct blob_attr *attr, int type);
 
 /*
