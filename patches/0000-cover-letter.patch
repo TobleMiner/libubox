@@ -1,9 +1,26 @@
 From c7077ab1b95acfa62001430c0bb07025e7cd5336 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <tobleminer@gmail.com>
 Date: Mon, 19 Nov 2018 22:06:26 +0100
-Subject: [PATCH 0/3] *** SUBJECT HERE ***
+Subject: [PATCH 0/3] libubox: Enhance robustness of blobmsg parsing
 
-*** BLURB HERE ***
+Hi,
+
+this patch set makes parsing of blobmsg messages more robust against
+malformed data.
+
+Previously blobmsg_parse would crash due to out of bounds reads when
+provied with malformed blobs containing invalid blob length specifications.
+I've introduced a _safe variant of all blobmsg_check_* methods that takes
+an additional length argument that allows it to verify that all performed
+reads will be inside the buffer containing the struct attr* to be checked.
+
+I've not changed the semantics of the old, unsafe blobmsg_check_* functions
+to include a compiler-level deprecation warning to ensure it does not break
+builds of existing packages depending on libubox compiled with -Werror.
+
+Best Regards,
+
+Tobias Schramm
 
 Tobias Schramm (3):
   Ensure blob_attr length check does not perform out of bounds reads
