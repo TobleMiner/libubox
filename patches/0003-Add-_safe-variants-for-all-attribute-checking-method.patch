@@ -1,0 +1,97 @@
+From c7077ab1b95acfa62001430c0bb07025e7cd5336 Mon Sep 17 00:00:00 2001
+From: Tobias Schramm <tobleminer@gmail.com>
+Date: Thu, 15 Nov 2018 03:42:48 +0100
+Subject: [PATCH 3/3] Add _safe variants for all attribute checking methods
+
+Signed-off-by: Tobias Schramm <tobleminer@gmail.com>
+---
+ blobmsg.c | 15 ++++++++++++---
+ blobmsg.h | 12 ++++++++++--
+ 2 files changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/blobmsg.c b/blobmsg.c
+index dd4b506..97a9a0b 100644
+--- a/blobmsg.c
++++ b/blobmsg.c
+@@ -81,10 +81,14 @@ bool blobmsg_check_attr_safe(const struct blob_attr *attr, bool name, size_t len
+ }
+ 
+ int blobmsg_check_array(const struct blob_attr *attr, int type)
++{
++	return blobmsg_check_array_safe(attr, type, blob_raw_len(attr));
++}
++
++int blobmsg_check_array_safe(const struct blob_attr *attr, int type, size_t len)
+ {
+ 	struct blob_attr *cur;
+ 	bool name;
+-	int rem;
+ 	int size = 0;
+ 
+ 	switch (blobmsg_type(attr)) {
+@@ -98,11 +102,11 @@ int blobmsg_check_array(const struct blob_attr *attr, int type)
+ 		return -1;
+ 	}
+ 
+-	blobmsg_for_each_attr(cur, attr, rem) {
++	__blobmsg_for_each_attr(cur, attr, len) {
+ 		if (type != BLOBMSG_TYPE_UNSPEC && blobmsg_type(cur) != type)
+ 			return -1;
+ 
+-		if (!blobmsg_check_attr(cur, name))
++		if (!blobmsg_check_attr_safe(cur, name, len))
+ 			return -1;
+ 
+ 		size++;
+@@ -116,6 +120,11 @@ bool blobmsg_check_attr_list(const struct blob_attr *attr, int type)
+ 	return blobmsg_check_array(attr, type) >= 0;
+ }
+ 
++bool blobmsg_check_attr_list_safe(const struct blob_attr *attr, int type, size_t len)
++{
++	return blobmsg_check_array_safe(attr, type, len) >= 0;
++}
++
+ int blobmsg_parse_array(const struct blobmsg_policy *policy, int policy_len,
+ 			struct blob_attr **tb, void *data, unsigned int len)
+ {
+diff --git a/blobmsg.h b/blobmsg.h
+index 76c6b60..1cc4200 100644
+--- a/blobmsg.h
++++ b/blobmsg.h
+@@ -105,10 +105,11 @@ static inline int blobmsg_len(const struct blob_attr *attr)
+ }
+ 
+ bool blobmsg_check_attr(const struct blob_attr *attr, bool name);
+-bool blobmsg_check_attr_list(const struct blob_attr *attr, int type);
+-
+ bool blobmsg_check_attr_safe(const struct blob_attr *attr, bool name, size_t len);
+ 
++bool blobmsg_check_attr_list(const struct blob_attr *attr, int type);
++bool blobmsg_check_attr_list_safe(const struct blob_attr *attr, int type, size_t len);
++
+ /*
+  * blobmsg_check_array: validate array/table and return size
+  *
+@@ -116,6 +117,7 @@ bool blobmsg_check_attr_safe(const struct blob_attr *attr, bool name, size_t len
+  * the specified type. Returns the number of elements in the array
+  */
+ int blobmsg_check_array(const struct blob_attr *attr, int type);
++int blobmsg_check_array_safe(const struct blob_attr *attr, int type, size_t len);
+ 
+ int blobmsg_parse(const struct blobmsg_policy *policy, int policy_len,
+                   struct blob_attr **tb, void *data, unsigned int len);
+@@ -272,4 +274,10 @@ int blobmsg_printf(struct blob_buf *buf, const char *name, const char *format, .
+ 	     (blob_pad_len(pos) >= sizeof(struct blob_attr)); \
+ 	     rem -= blob_pad_len(pos), pos = blob_next(pos))
+ 
++#define __blobmsg_for_each_attr(pos, attr, rem) \
++	for (pos = (struct blob_attr *) (attr ? blobmsg_data(attr) : NULL); \
++	     rem >= sizeof(struct blob_attr) && (blob_pad_len(pos) <= rem) && \
++	     (blob_pad_len(pos) >= sizeof(struct blob_attr)); \
++	     rem -= blob_pad_len(pos), pos = blob_next(pos))
++
+ #endif
+-- 
+2.19.1
+

@@ -1,7 +1,7 @@
-From 3763623e7868e2d365c6ae154304ee95f12598b4 Mon Sep 17 00:00:00 2001
+From 63f80a847fffc079779ae2a217f647df5edcc69f Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <tobleminer@gmail.com>
 Date: Tue, 13 Nov 2018 04:08:00 +0100
-Subject: [PATCH 1/2] Ensure blob_attr length check does not perform out of
+Subject: [PATCH 1/3] Ensure blob_attr length check does not perform out of
  bounds reads
 
 Before there might have been as little as one single byte left which would result
@@ -36,7 +36,7 @@ index a092f5d..2304f8c 100644
  	     rem -= blob_pad_len(pos), pos = blob_next(pos))
  
 diff --git a/blobmsg.h b/blobmsg.h
-index b06ef59..b63dd52 100644
+index b06ef59..c75f1d9 100644
 --- a/blobmsg.h
 +++ b/blobmsg.h
 @@ -266,7 +266,7 @@ int blobmsg_printf(struct blob_buf *buf, const char *name, const char *format, .
@@ -44,7 +44,7 @@ index b06ef59..b63dd52 100644
  	for (rem = attr ? blobmsg_data_len(attr) : 0, \
  	     pos = (struct blob_attr *) (attr ? blobmsg_data(attr) : NULL); \
 -	     rem > 0 && (blob_pad_len(pos) <= rem) && \
-+	     rem = sizeof(struct blob_attr) && (blob_pad_len(pos) <= rem) && \
++	     rem >= sizeof(struct blob_attr) && (blob_pad_len(pos) <= rem) && \
  	     (blob_pad_len(pos) >= sizeof(struct blob_attr)); \
  	     rem -= blob_pad_len(pos), pos = blob_next(pos))
  

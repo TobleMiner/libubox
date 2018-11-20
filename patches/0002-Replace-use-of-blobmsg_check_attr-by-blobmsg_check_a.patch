@@ -1,7 +1,7 @@
-From 40c1f60bbd88fc50b006c61a538555f666e1c02c Mon Sep 17 00:00:00 2001
+From aa4b1b4533307ad7d8f918b0a99582198dcefea2 Mon Sep 17 00:00:00 2001
 From: Tobias Schramm <tobleminer@gmail.com>
 Date: Tue, 13 Nov 2018 04:16:12 +0100
-Subject: [PATCH 2/2] Replace use of blobmsg_check_attr by
+Subject: [PATCH 2/3] Replace use of blobmsg_check_attr by
  blobmsg_check_attr_safe
 
 blobmsg_check_attr_safe adds a length limit specifying the max offset from attr that
@@ -9,12 +9,12 @@ can be read safely
 
 Signed-off-by: Tobias Schramm <tobleminer@gmail.com>
 ---
- blobmsg.c | 30 ++++++++++++++++++++++++------
+ blobmsg.c | 27 ++++++++++++++++++++++-----
  blobmsg.h |  2 ++
- 2 files changed, 26 insertions(+), 6 deletions(-)
+ 2 files changed, 24 insertions(+), 5 deletions(-)
 
 diff --git a/blobmsg.c b/blobmsg.c
-index 8019c45..93feb22 100644
+index 8019c45..dd4b506 100644
 --- a/blobmsg.c
 +++ b/blobmsg.c
 @@ -32,18 +32,33 @@ blobmsg_namelen(const struct blobmsg_hdr *hdr)
@@ -22,7 +22,7 @@ index 8019c45..93feb22 100644
  
  bool blobmsg_check_attr(const struct blob_attr *attr, bool name)
 +{
-+	return blobmsg_check_attr_safe(attr, name, blob_len(attr) + sizeof(struct blob_attr));
++	return blobmsg_check_attr_safe(attr, name, blob_raw_len(attr));
 +}
 +
 +bool blobmsg_check_attr_safe(const struct blob_attr *attr, bool name, size_t len)
@@ -73,17 +73,7 @@ index 8019c45..93feb22 100644
  }
  
  int blobmsg_check_array(const struct blob_attr *attr, int type)
-@@ -85,7 +102,8 @@ int blobmsg_check_array(const struct blob_attr *attr, int type)
- 		if (type != BLOBMSG_TYPE_UNSPEC && blobmsg_type(cur) != type)
- 			return -1;
- 
--		if (!blobmsg_check_attr(cur, name))
-+		// TODO: As far as security goes rem ist pretty meaningless here, it's beeing extracted right out of attr
-+		if (!blobmsg_check_attr_safe(cur, name, rem))
- 			return -1;
- 
- 		size++;
-@@ -111,7 +129,7 @@ int blobmsg_parse_array(const struct blobmsg_policy *policy, int policy_len,
+@@ -111,7 +128,7 @@ int blobmsg_parse_array(const struct blobmsg_policy *policy, int policy_len,
  		    blob_id(attr) != policy[i].type)
  			continue;
  
@@ -92,7 +82,7 @@ index 8019c45..93feb22 100644
  			return -1;
  
  		if (tb[i])
-@@ -158,7 +176,7 @@ int blobmsg_parse(const struct blobmsg_policy *policy, int policy_len,
+@@ -158,7 +175,7 @@ int blobmsg_parse(const struct blobmsg_policy *policy, int policy_len,
  			if (blobmsg_namelen(hdr) != pslen[i])
  				continue;
  
@@ -102,7 +92,7 @@ index 8019c45..93feb22 100644
  
  			if (tb[i])
 diff --git a/blobmsg.h b/blobmsg.h
-index b63dd52..38d8a12 100644
+index c75f1d9..76c6b60 100644
 --- a/blobmsg.h
 +++ b/blobmsg.h
 @@ -107,6 +107,8 @@ static inline int blobmsg_len(const struct blob_attr *attr)
