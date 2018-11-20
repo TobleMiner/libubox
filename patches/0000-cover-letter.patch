@@ -14,6 +14,10 @@ I've introduced a _safe variant of all blobmsg_check_* methods that takes
 an additional length argument that allows it to verify that all performed
 reads will be inside the buffer containing the struct attr* to be checked.
 
+Since we do already get the actual buffer length for free in a few places
+(namely blobmsg_parse, blobmsg_parse_array) I've adjusted those methods to
+use the _safe attribute checking variants.
+
 I've not changed the semantics of the old, unsafe blobmsg_check_* functions
 to include a compiler-level deprecation warning to ensure it does not break
 builds of existing packages depending on libubox compiled with -Werror.
