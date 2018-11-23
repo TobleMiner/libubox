@@ -127,15 +127,62 @@ blobmsg_check_attr(const struct blob_attr *attr, bool name)
 	return blobmsg_check_attr_safe(attr, name, blob_raw_len(attr));
 }
 
+/*
+ * blobmsg_check_attr_list: validate a list of attributes
+ *
+ * This method may be used with trusted data only. Providing
+ * malformed blobs will cause out of bounds memory access and
+ * crash your program or get your device 0wned.
+ */
 bool blobmsg_check_attr_list(const struct blob_attr *attr, int type);
+
+/*
+ * blobmsg_check_attr_list_safe: safely validate a list of untrusted attributes
+ *
+ * This method is a safe implementation of blobmsg_check_attr_list.
+ * It will limit all memory access performed on the blob to the
+ * range [attr, attr + len] (upper bound non inclusive) and is
+ * thus suited for checking untrusted blob attributes.
+ */
+bool blobmsg_check_attr_list_safe(const struct blob_attr *attr, int type, size_t len);
+
+/*
+ * blobmsg_check_attr: validate a list of attributes
+ *
+ * This methods may be used with trusted data only. Providing
+ * malformed blobs will cause out of bounds memory access and
+ * crash your program or get your device 0wned.
+ */
+bool blobmsg_check_attr_list(const struct blob_attr *attr, int type);
+
+/*
+ * blobmsg_check_array: safely validate untrusted array/table and return size
+ *
+ * Checks if all elements of an array or table are valid and have
+ * the specified type. Returns the number of elements in the array
+ *
+ * This method is a safe implementation of blobmsg_check_array.
+ * It will limit all memory access performed on the blob to the
+ * range [attr, attr + len] (upper bound non inclusive) and is
+ * thus suited for checking untrusted blob attributes.
+ */
+int blobmsg_check_array_safe(const struct blob_attr *attr, int type, size_t len);
 
 /*
  * blobmsg_check_array: validate array/table and return size
  *
  * Checks if all elements of an array or table are valid and have
  * the specified type. Returns the number of elements in the array
+ *
+ * This method may be used with trusted data only. Providing
+ * malformed blobs will cause out of bounds memory access and
+ * crash your program or get your device 0wned.
  */
-int blobmsg_check_array(const struct blob_attr *attr, int type);
+static inline int
+blobmsg_check_array(const struct blob_attr *attr, int type)
+{
+	return blobmsg_check_array_safe(attr, type, blob_raw_len(attr));
+}
 
 int blobmsg_parse(const struct blobmsg_policy *policy, int policy_len,
                   struct blob_attr **tb, void *data, unsigned int len);

@@ -75,12 +75,15 @@ bool blobmsg_check_attr_safe(const struct blob_attr *attr, bool name, size_t len
 	return blob_check_type(data, data_len, blob_type[id]);
 }
 
-int blobmsg_check_array(const struct blob_attr *attr, int type)
+int blobmsg_check_array_safe(const struct blob_attr *attr, int type, size_t len)
 {
 	struct blob_attr *cur;
 	bool name;
 	int rem;
 	int size = 0;
+
+	if (!blobmsg_check_attr_safe(attr, false, len))
+		return -1;
 
 	switch (blobmsg_type(attr)) {
 	case BLOBMSG_TYPE_TABLE:
@@ -97,7 +100,7 @@ int blobmsg_check_array(const struct blob_attr *attr, int type)
 		if (type != BLOBMSG_TYPE_UNSPEC && blobmsg_type(cur) != type)
 			return -1;
 
-		if (!blobmsg_check_attr(cur, name))
+		if (!blobmsg_check_attr_safe(cur, name, rem))
 			return -1;
 
 		size++;
@@ -109,6 +112,11 @@ int blobmsg_check_array(const struct blob_attr *attr, int type)
 bool blobmsg_check_attr_list(const struct blob_attr *attr, int type)
 {
 	return blobmsg_check_array(attr, type) >= 0;
+}
+
+bool blobmsg_check_attr_list_safe(const struct blob_attr *attr, int type, size_t len)
+{
+	return blobmsg_check_array_safe(attr, type, len) >= 0;
 }
 
 int blobmsg_parse_array(const struct blobmsg_policy *policy, int policy_len,
