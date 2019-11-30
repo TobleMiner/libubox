@@ -129,7 +129,8 @@ fill_message(struct blob_buf *buf)
 	blobmsg_close_table(buf, tbl);
 }
 
-int main(int argc, char **argv)
+static void
+test_blob_to_json()
 {
 	char *json = NULL;
 	static struct blob_buf buf;
@@ -147,6 +148,75 @@ int main(int argc, char **argv)
 	if (buf.buf)
 		free(buf.buf);
 	free(json);
+}
+
+
+static const char* testkey = "test";
+static const char* testdata = "12345678";
+
+static void
+test_incomplete_blob()
+{
+	unsigned int i, j;
+	static struct blob_buf buf;
+
+	for(i = 0; i <= BLOBMSG_TYPE_LAST; i++) {
+		struct blobmsg_policy pol[] = {
+			{
+				.name = testkey,
+				.type = i,
+			},
+		};
+
+		blobmsg_buf_init(&buf);
+		switch(i) {
+		case BLOBMSG_TYPE_UNSPEC:
+			continue;
+		case BLOBMSG_TYPE_INT8:
+			blobmsg_add_u8(&buf, testkey, 0x42);
+			break;
+		case BLOBMSG_TYPE_INT16:
+			blobmsg_add_u16(&buf, testkey, 0x4242);
+			break;
+		case BLOBMSG_TYPE_INT32:
+			blobmsg_add_u32(&buf, testkey, 0x42424242);
+			break;
+		case BLOBMSG_TYPE_INT64:
+			blobmsg_add_u64(&buf, testkey, 0x4242424242424242);
+			break;
+		case BLOBMSG_TYPE_STRING:
+			blobmsg_add_string(&buf, testkey, testdata);
+			break;
+		case BLOBMSG_TYPE_DOUBLE:
+			blobmsg_add_double(&buf, testkey, 42.42);
+			break;
+		case BLOBMSG_TYPE_TABLE:
+			blobmsg_close_table(&buf, blobmsg_open_table(&buf, testkey));
+			break;
+		case BLOBMSG_TYPE_ARRAY:
+			blobmsg_close_array(&buf, blobmsg_open_array(&buf, testkey));
+			break;
+		default:
+			fprintf(stderr, "Test encountered unknown datatype %d, please fix me\n", i);
+			goto next;
+		}
+		for(j = 1; j < blob_len(buf.head); j++) {
+			struct blob_attr *attr = NULL;
+			blobmsg_parse(pol, 1, &attr, blob_data(buf.head), blob_len(buf.head) - j);
+			if (attr) {
+				fprintf(stderr, "blobmsg parsed incomplete blob, oob read %d bytes!\n", j);
+				exit(EXIT_FAILURE);
+			}
+		}
+next:
+		blob_buf_free(&buf);
+	}
+}
+
+int main(int argc, char **argv)
+{
+	test_blob_to_json();
+	test_incomplete_blob();
 
 	return 0;
 }
